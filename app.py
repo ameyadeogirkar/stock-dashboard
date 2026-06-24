@@ -349,6 +349,13 @@ def statement_preview(statements: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.DataFrame(data).T
 
 
+def format_financial_table(frame: pd.DataFrame) -> pd.DataFrame:
+    formatter = lambda value: format_number(value, "₹")
+    if hasattr(frame, "map"):
+        return frame.map(formatter)
+    return frame.applymap(formatter)
+
+
 def build_price_chart(history: pd.DataFrame, title: str, currency_symbol: str) -> go.Figure:
     fig = make_subplots(
         rows=2,
@@ -530,7 +537,7 @@ def render_financials(symbol: str) -> None:
     statements = get_financial_statements(symbol)
     overview = statement_preview(statements)
     if not overview.empty:
-        st.dataframe(overview.applymap(lambda value: format_number(value, "₹")), use_container_width=True)
+        st.dataframe(format_financial_table(overview), use_container_width=True)
 
     tabs = st.tabs(["Income Statement", "Balance Sheet", "Cash Flow"])
     for tab, statement_name in zip(tabs, ["Income Statement", "Balance Sheet", "Cash Flow"]):
@@ -539,7 +546,7 @@ def render_financials(symbol: str) -> None:
             if frame.empty:
                 st.info(f"{statement_name} is not available from Yahoo Finance for this symbol.")
                 continue
-            st.dataframe(frame.applymap(lambda value: format_number(value, "₹")), use_container_width=True)
+            st.dataframe(format_financial_table(frame), use_container_width=True)
             csv = frame.to_csv().encode("utf-8")
             st.download_button(
                 f"Download {statement_name} CSV",
